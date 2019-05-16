@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Basic Glow</title>
+  <script src="../node_modules/three/build/three.js"></script>
+  <script src="../node_modules/three/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+  <script type="x-shader/x-vertex" id="vertex">
+    precision mediump float;
+    attribute vec3 in_Position;
+    varying vec2 vUv;
+    // varying vec2 fragCoord;
+
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0 );
+      // fragCoord = position.xy;
+    }
+  </script>
+  <script type="x-shader/x-fragment" id="fragment">
+    precision mediump float;
+    uniform float iTime;
+    uniform vec2 iResolution;
+    varying vec2 vUv;
+    // varying vec2 fragCoord;
+
+    vec3 v3( float x, float y, float z ){
+      return vec3( x, y, z );
+    }
+
+    vec3 h2rgb( float hue ){
+      float h = abs(hue - floor(hue)) * 6.;
+      vec3 c = vec3( 0., 0., 0. );
+       
+      int f = int(floor( h ));
+        
+      if(f == 0)c = v3(1., h, 0.);
+      else if(f == 1)c = v3(2.-h, 1., 0.);
+      else if(f == 2)c = v3(0., 1., h-2.);
+      else if(f == 3)c = v3(0., 4.-h, 1.);
+      else if(f == 4)c = v3(h-4., 0., 1.);
+      else c = v3(1., 0., 6. - h);
+      
+      return c;
+    }
+
+    void main() {
+      // vec2 q = - 1.0 + 2.0 * vUv;
+
+      vec2 q = vUv.xy * iResolution.xy - iResolution.xy / 2.;
+    
+      vec3 originColor = h2rgb( iTime / 10. );
+    
+      float dist = sqrt(q.x * q.x + q.y * q.y);
+      float radius = 100.;
+    
+	    gl_FragColor = dist < radius ? vec4(originColor, 1) : vec4( originColor / sqrt( dist - radius + 1. ), 0 ) ;
+    }
+
+  </script>
+
+  <script>
+      var scene = new THREE.Scene()
+
+      var camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000)
+      camera.position.x = 0
+      camera.position.y = 0
+      camera.position.z = 5
+
+      var renderer = new THREE.WebGLRenderer({antialias: true})
+      renderer.setSize(window.innerWidth, window.innerHeight)
+      document.body.appendChild(renderer.domElement)
+
+      var light = new THREE.HemisphereLight(0xeeeeee, 0x888888, 1)
+      light.position.set(0, 20, 0)
+      scene.add(light)
+
+      var controls = new THREE.OrbitControls(camera)
+
+      var geometry = new THREE.BoxGeometry(1, 1, 1)
+      var uniforms = {
+        iTime: {
+          type: 'f',
+          value: 1.0
+        },
+        iResolution: {
+          type: 'v2',
+          value: new THREE.Vector2()
+        }
+      }
+      uniforms.iResolution.value.x = 300                      // window.innerWidth;
+      uniforms.iResolution.value.y = 300                      // window.innerHeight;
+      var material = new THREE.ShaderMaterial({
+        uniforms: uniforms,
+        vertexShader: document.getElementById('vertex').textContent,
+        fragmentShader: document.getElementById('fragment').textContent
+      })
+      mesh = new THREE.Mesh(geometry, material)
+      mesh.startTime = Date.now()
+      mesh.uniforms = uniforms
+      mesh.position.set(0, 0, -2)
+      scene.add(mesh)
+
+      function render() {
+        var time = (Date.now() - mesh.startTime) / 1000
+        mesh.uniforms.iTime.value = time
+        requestAnimationFrame(render)
+        renderer.render(scene, camera)
+      }
+
+      render()
+    </script>
+</body>
+</html>

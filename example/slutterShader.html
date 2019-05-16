@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>slutter shader</title>
+  <script src="../node_modules/three/build/three.js"></script>
+  <script src="../node_modules/three/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+  <script type="x-shader/x-vertex" id="vertex">
+    precision mediump float;
+    varying vec2 vUv;
+
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0 );
+    }
+  </script>
+  <script type="x-shader/x-fragment" id="fragment">
+    precision mediump float;
+    uniform float iTime;
+    uniform vec2 iResolution;
+    varying vec2 vUv;
+
+    float smoothCircle(vec2 pos, vec2 center, float radius) { 
+      float smoothness = 2.0 / iResolution.x;
+      float distFromCenter = distance(pos, center);
+      float col = smoothstep(radius, radius + smoothness, distFromCenter);
+
+      return 1.0 - col;
+    }
+
+    void main(){
+      vec2 uv = vUv;
+      uv.x *= iResolution.x / iResolution.y;
+    
+      // float stutterTime = floor(iTime * 10.0) / 10.0;
+
+      // float stutterRadius = abs(sin(stutterTime)) * 0.25 + 0.05;
+      float smoothRadius  = abs(sin(iTime)) * 0.25 + 0.05;
+    
+      // float stutterCover = smoothCircle(uv, vec2(0.5, 0.5), stutterRadius);
+      float smoothCover  = smoothCircle(uv, vec2(0.5, 0.5), smoothRadius);
+    
+      // vec4 stutterColor = vec4(1.0, 0.0, 0.0, 0.5);
+      vec4 smoothColor  = vec4(0.0, 1.0, 0.0, 0.5);
+    
+      gl_FragColor = vec4(0.2, 0.2, 0.2, 1.0);
+      gl_FragColor = mix(gl_FragColor, smoothColor, smoothCover);
+      // gl_FragColor = mix(gl_FragColor, stutterColor, stutterCover);
+    }
+  </script>
+  <script>
+      var scene = new THREE.Scene()
+
+      var camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000)
+      camera.position.x = 0
+      camera.position.y = 0
+      camera.position.z = 5
+
+      var renderer = new THREE.WebGLRenderer({antialias: true})
+      renderer.setSize(window.innerWidth, window.innerHeight)
+      document.body.appendChild(renderer.domElement)
+
+      var light = new THREE.HemisphereLight(0xeeeeee, 0x888888, 1)
+      light.position.set(0, 20, 0)
+      scene.add(light)
+
+      var controls = new THREE.OrbitControls(camera)
+
+      var geometry = new THREE.BoxGeometry(1, 1, 1)
+      var uniforms = {
+        iTime: {
+          type: 'f',
+          value: 1.0
+        },
+        iResolution: {
+          type: 'v2',
+          value: new THREE.Vector2()
+        }
+      }
+      uniforms.iResolution.value.x = 300                      // window.innerWidth;
+      uniforms.iResolution.value.y = 300                      // window.innerHeight;
+      var material = new THREE.ShaderMaterial({
+        uniforms: uniforms,
+        vertexShader: document.getElementById('vertex').textContent,
+        fragmentShader: document.getElementById('fragment').textContent
+      })
+      mesh = new THREE.Mesh(geometry, material)
+      mesh.startTime = Date.now()
+      mesh.uniforms = uniforms
+      mesh.position.set(0, 0, -2)
+      scene.add(mesh)
+
+      function render() {
+        var time = (Date.now() - mesh.startTime) / 1000
+        mesh.uniforms.iTime.value = time
+        requestAnimationFrame(render)
+        renderer.render(scene, camera)
+      }
+
+      render()
+  </script>
+</body>
+</html>
