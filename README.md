@@ -1,15 +1,14 @@
 # three-shader
 
-该仓库将为基于three.js的项目提供一些丰富多样的shader代码，目前的示例均改造自shadertoy。
+The repository will provide some rich and diverse shader code for projects based on three.js, and the current examples are all adapted from shadertoy.
 
-## 安装three.js
+## install dependencies
 
 ```
 npm install
 ```
 
-## demo地址
+## demo address
 
-[demo地址](http://zyqvizzzzz.github.io)
+[demo address](http://zyqvizzzzz.github.io)
 
-## 分类
